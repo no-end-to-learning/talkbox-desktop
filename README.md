@@ -5,7 +5,7 @@ Tauri 2 + Vue 3 + TypeScript 跨平台桌面客户端，支持 Windows、macOS�
 ## 功能特性
 
 - 用户注册/登录
-- 好友管理（添加、接受、删除）
+- 用户列表（可直接发起私聊）
 - 私聊和群聊
 - 多种消息类型（文字、图片、视频、文件、卡片）
 - @提及和引用回复
@@ -33,7 +33,7 @@ Tauri 2 + Vue 3 + TypeScript 跨平台桌面客户端，支持 Windows、macOS�
 │   │   ├── auth.ts          # 认证状态
 │   │   ├── conversation.ts  # 会话状态
 │   │   ├── message.ts       # 消息状态
-│   │   ├── friend.ts        # 好友状态
+│   │   ├── friend.ts        # 用户列表状态
 │   │   └── bot.ts           # Bot 状态
 │   ├── views/
 │   │   ├── Login.vue        # 登录页
