@@ -201,7 +201,7 @@ const filteredConversations = computed(() => {
 
   return conversationStore.conversations.filter(conv => {
     const name = getConversationName(conv).toLowerCase()
-    const lastMsg = (conv.last_message || '').toLowerCase()
+    const lastMsg = getLastMessage(conv).toLowerCase()
     return name.includes(query) || lastMsg.includes(query)
   })
 })
@@ -249,7 +249,15 @@ function getConversationName(conv: Conversation): string {
 }
 
 function getLastMessage(conv: Conversation): string {
-  return conv.last_message || ''
+  const msg = conv.last_message
+  if (!msg) return ''
+  if (msg.type === 'text' && msg.content && 'text' in msg.content) {
+    return msg.content.text
+  }
+  if (msg.type === 'image') return '[图片]'
+  if (msg.type === 'video') return '[视频]'
+  if (msg.type === 'file') return '[文件]'
+  return ''
 }
 
 function formatTime(dateStr: string): string {

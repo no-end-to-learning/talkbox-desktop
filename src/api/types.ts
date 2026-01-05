@@ -15,6 +15,8 @@ export interface Conversation {
   updated_at: string
   members?: Member[]
   bots?: Bot[]
+  unread_count?: number
+  last_message?: Message
 }
 
 export interface Member {

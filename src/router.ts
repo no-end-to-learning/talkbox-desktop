@@ -63,7 +63,7 @@ async function resizeWindow(small: boolean) {
   }
 }
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.token) {

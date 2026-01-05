@@ -168,13 +168,13 @@
             <div class="section-title">添加成员</div>
             <div class="add-list">
               <div v-for="friend in availableFriends" :key="friend.id" class="member-item">
-                <div class="member-avatar" :class="getAvatarColor(friend.friend.id)">
-                  {{ friend.friend.nickname?.[0] || 'U' }}
+                <div class="member-avatar" :class="getAvatarColor(friend.id)">
+                  {{ friend.nickname?.[0] || 'U' }}
                 </div>
                 <div class="member-info">
-                  <div class="member-name">{{ friend.friend.nickname }}</div>
+                  <div class="member-name">{{ friend.nickname }}</div>
                 </div>
-                <button class="btn primary small" @click="addMember(friend.friend.id)">添加</button>
+                <button class="btn primary small" @click="addMember(friend.id)">添加</button>
               </div>
               <div v-if="availableFriends.length === 0" class="empty-hint">
                 暂无可添加的好友
@@ -431,7 +431,7 @@ const availableFriends = computed(() => {
   const conv = conversation.value
   if (!conv) return []
   const memberIds = new Set(conv.members?.map(m => m.user_id) || [])
-  return friendStore.friends.filter(f => !memberIds.has(f.friend.id))
+  return friendStore.friends.filter(f => !memberIds.has(f.id))
 })
 
 const availableBots = computed(() => {
@@ -784,14 +784,6 @@ function getFileType(file: File): string {
   if (file.type.startsWith('image/')) return 'image'
   if (file.type.startsWith('video/')) return 'video'
   return 'file'
-}
-
-function getFileTypeLabel(type: string): string {
-  switch (type) {
-    case 'image': return '图片'
-    case 'video': return '视频'
-    default: return '文件'
-  }
 }
 
 function formatFileSize(bytes: number): string {

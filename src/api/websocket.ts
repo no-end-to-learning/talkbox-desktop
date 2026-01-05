@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-import type { Message } from './types'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 const WS_URL = BASE_URL.replace(/^http/, 'ws') + '/ws'
