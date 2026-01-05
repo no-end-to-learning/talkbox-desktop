@@ -92,14 +92,6 @@ export interface Bot {
   created_at: string
 }
 
-export interface Friend {
-  id: string
-  user_id: string
-  friend_id: string
-  status: 'pending' | 'accepted' | 'blocked'
-  friend: User
-}
-
 export interface ApiResponse<T> {
   code: number
   message?: string
