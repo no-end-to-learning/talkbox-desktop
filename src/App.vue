@@ -5,14 +5,17 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 onMounted(() => {
+  // 如果有保存的登录状态，初始化 WebSocket 连接
   if (authStore.token) {
-    authStore.fetchCurrentUser()
+    authStore.init()
+    // 后台刷新用户信息（不阻塞界面）
+    authStore.fetchCurrentUser().catch(() => {
+      // token 失效会自动跳转到登录页
+    })
   }
 })
 </script>

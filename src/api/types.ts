@@ -14,6 +14,7 @@ export interface Conversation {
   created_at: string
   updated_at: string
   members?: Member[]
+  bots?: Bot[]
 }
 
 export interface Member {

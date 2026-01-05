@@ -26,7 +26,10 @@ export const useConversationStore = defineStore('conversation', () => {
     const res: any = await http.get(`/api/conversations/${id}`)
     const index = conversations.value.findIndex(c => c.id === id)
     if (index >= 0) {
-      conversations.value[index] = res
+      // 使用 splice 确保响应性
+      conversations.value.splice(index, 1, res)
+    } else {
+      conversations.value.push(res)
     }
     return res
   }
@@ -61,6 +64,19 @@ export const useConversationStore = defineStore('conversation', () => {
     await http.delete(`/api/conversations/${conversationId}/bots/${botId}`)
   }
 
+  async function dissolveGroup(conversationId: string) {
+    await http.delete(`/api/conversations/${conversationId}`)
+    conversations.value = conversations.value.filter(c => c.id !== conversationId)
+    if (currentConversationId.value === conversationId) {
+      currentConversationId.value = ''
+    }
+  }
+
+  async function updateGroup(conversationId: string, data: { name?: string }) {
+    await http.put(`/api/conversations/${conversationId}`, data)
+    await fetchConversation(conversationId)
+  }
+
   function setCurrentConversation(id: string) {
     currentConversationId.value = id
   }
@@ -87,6 +103,8 @@ export const useConversationStore = defineStore('conversation', () => {
     removeMember,
     addBot,
     removeBot,
+    dissolveGroup,
+    updateGroup,
     setCurrentConversation,
     updateConversationTime
   }

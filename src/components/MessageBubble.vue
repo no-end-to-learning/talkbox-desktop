@@ -1,16 +1,22 @@
 <template>
-  <div class="message-bubble" :class="{ self: isSelf }">
-    <div v-if="!isSelf" class="avatar">{{ message.sender.nickname?.[0] || 'U' }}</div>
+  <div class="message-bubble" :class="{ 'no-avatar': !showAvatar }">
+    <div v-if="showAvatar" class="avatar" :class="getAvatarColor(message.sender.id)">
+      {{ message.sender.nickname?.[0] || 'U' }}
+    </div>
+    <div v-else class="avatar-placeholder"></div>
 
     <div class="bubble-content">
-      <div v-if="!isSelf" class="sender-name">
+      <div v-if="showName" class="sender-name">
         {{ message.sender.nickname }}
         <span v-if="message.sender.type === 'bot'" class="bot-badge">Bot</span>
       </div>
 
       <div v-if="message.reply_to" class="reply-ref" @click="$emit('scrollTo', message.reply_to.id)">
-        <span class="reply-name">{{ message.reply_to.sender_name }}</span>
-        <span class="reply-text">{{ getReplyPreview(message.reply_to) }}</span>
+        <div class="reply-bar"></div>
+        <div class="reply-body">
+          <span class="reply-name">{{ message.reply_to.sender_name }}</span>
+          <span class="reply-text">{{ getReplyPreview(message.reply_to) }}</span>
+        </div>
       </div>
 
       <div class="bubble" :class="message.type">
@@ -22,24 +28,34 @@
           <img
             :src="getFileUrl((message.content as any).url)"
             class="image-content"
-            @click="openImage((message.content as any).url)"
+            @click="$emit('viewImage', getFileUrl((message.content as any).url))"
           />
         </template>
 
         <template v-else-if="message.type === 'video'">
-          <video
-            :src="getFileUrl((message.content as any).url)"
-            controls
-            class="video-content"
-          ></video>
+          <div class="video-thumbnail" @click="$emit('playVideo', getFileUrl((message.content as any).url))">
+            <video
+              :src="getFileUrl((message.content as any).url)"
+              class="video-content"
+              preload="metadata"
+            ></video>
+            <div class="play-overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
         </template>
 
         <template v-else-if="message.type === 'file'">
           <div class="file-content" @click="downloadFile((message.content as any).url, (message.content as any).name)">
-            <div class="file-icon">📄</div>
+            <div class="file-icon">
+              <Icon icon="lucide:file-text" width="20" />
+            </div>
             <div class="file-info">
               <div class="file-name">{{ (message.content as any).name }}</div>
               <div class="file-size">{{ formatSize((message.content as any).size) }}</div>
+            </div>
+            <div class="file-download">
+              <Icon icon="lucide:download" width="16" />
             </div>
           </div>
         </template>
@@ -47,7 +63,7 @@
         <template v-else-if="message.type === 'card'">
           <div
             class="card-content"
-            :style="{ borderLeftColor: (message.content as any).color || '#1890ff' }"
+            :style="{ borderLeftColor: (message.content as any).color || '#3370ff' }"
             @click="openUrl((message.content as any).url)"
           >
             <div class="card-title">{{ (message.content as any).title }}</div>
@@ -62,25 +78,33 @@
       </div>
 
       <div class="message-meta">
-        <span class="time">{{ formatTime(message.created_at) }}</span>
-        <button class="reply-btn" @click="$emit('reply', message)">回复</button>
+        <button class="reply-btn" @click="$emit('reply', message)">
+          <Icon icon="lucide:reply" width="14" />
+          回复
+        </button>
       </div>
     </div>
-
-    <div v-if="isSelf" class="avatar">{{ message.sender.nickname?.[0] || 'U' }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Message } from '@/api/types'
 import { BASE_URL } from '@/api/http'
+import { Icon } from '@iconify/vue'
 
 defineProps<{
   message: Message
-  isSelf: boolean
+  showAvatar: boolean
+  showName: boolean
 }>()
 
-defineEmits(['reply', 'scrollTo'])
+defineEmits(['reply', 'scrollTo', 'viewImage', 'playVideo'])
+
+function getAvatarColor(id?: string): string {
+  if (!id) return 'color-1'
+  const num = id.charCodeAt(0) % 6 + 1
+  return `color-${num}`
+}
 
 function getFileUrl(url: string): string {
   if (url.startsWith('http')) return url
@@ -101,11 +125,6 @@ function formatText(text: string): string {
   return text
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-
 function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
@@ -117,10 +136,6 @@ function getReplyPreview(reply: any): string {
     return reply.content?.text?.slice(0, 20) || ''
   }
   return `[${reply.type}]`
-}
-
-function openImage(url: string) {
-  window.open(getFileUrl(url), '_blank')
 }
 
 function downloadFile(url: string, name: string) {
@@ -140,82 +155,120 @@ function openUrl(url?: string) {
 <style scoped>
 .message-bubble {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 16px;
   max-width: 70%;
 }
 
-.message-bubble.self {
-  margin-left: auto;
-  flex-direction: row-reverse;
+.message-bubble.no-avatar {
+  margin-bottom: 4px;
 }
 
 .avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: white;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-weight: 500;
+  font-size: 13px;
+  flex-shrink: 0;
+  color: white;
+}
+
+.avatar-placeholder {
+  width: 36px;
   flex-shrink: 0;
 }
+
+.avatar.color-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.avatar.color-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.avatar.color-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.avatar.color-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.avatar.color-5 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+.avatar.color-6 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
 .bubble-content {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .sender-name {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .bot-badge {
   background: var(--primary);
   color: white;
   font-size: 10px;
-  padding: 1px 4px;
-  border-radius: 2px;
-  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
 }
 
 .reply-ref {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.04);
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 6px;
   cursor: pointer;
+  max-width: 280px;
 }
 
-.reply-ref:hover {
-  background: rgba(0, 0, 0, 0.08);
+.reply-bar {
+  width: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.reply-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.reply-name {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.reply-text {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bubble {
-  background: white;
+  background: var(--bg-white);
   padding: 10px 14px;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  word-break: break-word;
 }
 
-.self .bubble {
-  background: var(--primary);
-  color: white;
-}
-
-.self .bubble a {
-  color: white;
+.bubble.image,
+.bubble.video {
+  padding: 4px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .text-content {
-  word-break: break-word;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 14px;
 }
 
 .text-content a {
@@ -223,16 +276,55 @@ function openUrl(url?: string) {
 }
 
 .image-content {
-  max-width: 300px;
+  max-width: 280px;
   max-height: 200px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  display: block;
 }
 
 .video-content {
-  max-width: 300px;
+  max-width: 280px;
   max-height: 200px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.video-thumbnail {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
+}
+
+.video-thumbnail:hover .play-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.play-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #333;
+  padding-left: 4px;
 }
 
 .file-content {
@@ -240,25 +332,49 @@ function openUrl(url?: string) {
   gap: 12px;
   align-items: center;
   cursor: pointer;
-  min-width: 200px;
+  min-width: 220px;
+  padding: 4px 0;
 }
 
 .file-icon {
-  font-size: 32px;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-main);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .file-name {
   font-weight: 500;
-  margin-bottom: 2px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .file-size {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  margin-top: 2px;
 }
 
-.self .file-size {
-  color: rgba(255, 255, 255, 0.8);
+.file-download {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
 }
 
 .card-content {
@@ -269,50 +385,42 @@ function openUrl(url?: string) {
 }
 
 .card-title {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   margin-bottom: 4px;
 }
 
 .card-body {
   font-size: 13px;
-  margin-bottom: 4px;
   color: var(--text-secondary);
-}
-
-.self .card-body {
-  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+  line-height: 1.5;
 }
 
 .card-note {
   font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.self .card-note {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-tertiary);
 }
 
 .message-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
   margin-top: 4px;
 }
 
-.time {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
 .reply-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   background: none;
   border: none;
-  padding: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 .message-bubble:hover .reply-btn {
@@ -321,5 +429,6 @@ function openUrl(url?: string) {
 
 .reply-btn:hover {
   color: var(--primary);
+  background: var(--bg-hover);
 }
 </style>
