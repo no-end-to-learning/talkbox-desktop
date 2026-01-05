@@ -83,7 +83,7 @@ export const useConversationStore = defineStore('conversation', () => {
 
   function updateConversationTime(conversationId: string) {
     const index = conversations.value.findIndex(c => c.id === conversationId)
-    if (index > 0) {
+    if (index >= 0) {
       const [conv] = conversations.value.splice(index, 1)
       conv.updated_at = new Date().toISOString()
       conversations.value.unshift(conv)

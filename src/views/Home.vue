@@ -164,6 +164,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast -->
+    <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
   </div>
 </template>
 
@@ -189,6 +192,12 @@ const showCreateGroup = ref(false)
 const newGroupName = ref('')
 const selectedFriends = ref<string[]>([])
 const listSearchQuery = ref('')
+const toast = ref({ show: false, message: '', type: 'success' })
+
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toast.value = { show: true, message, type }
+  setTimeout(() => { toast.value.show = false }, 2000)
+}
 
 const unreadCount = computed(() => {
   return conversationStore.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
@@ -296,7 +305,7 @@ async function createGroup() {
     newGroupName.value = ''
     selectedFriends.value = []
   } catch (e: any) {
-    alert(e.message || '创建失败')
+    showToast(e.message || '创建失败', 'error')
   }
 }
 
@@ -946,5 +955,25 @@ function toggleFriendSelection(friendId: string) {
   text-align: center;
   color: var(--text-tertiary);
   font-size: 13px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  z-index: 9999;
+}
+
+.toast.success {
+  background: var(--success);
+}
+
+.toast.error {
+  background: var(--error);
 }
 </style>

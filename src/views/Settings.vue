@@ -224,9 +224,9 @@ function getAvatarColor(id?: string): string {
 async function updateProfile() {
   try {
     await authStore.updateProfile({ nickname: nickname.value })
-    alert('保存成功')
+    showToast('保存成功')
   } catch (e: any) {
-    alert(e.message || '保存失败')
+    showToast(e.message || '保存失败', 'error')
   }
 }
 
@@ -252,7 +252,7 @@ function closeBotModal() {
 
 async function saveBot() {
   if (!botForm.name) {
-    alert('请输入 Bot 名称')
+    showToast('请输入 Bot 名称', 'error')
     return
   }
 
@@ -267,7 +267,7 @@ async function saveBot() {
     }
     closeBotModal()
   } catch (e: any) {
-    alert(e.message || '操作失败')
+    showToast(e.message || '操作失败', 'error')
   }
 }
 

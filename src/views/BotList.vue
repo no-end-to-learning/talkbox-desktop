@@ -59,6 +59,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast -->
+    <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
   </div>
 </template>
 
@@ -82,6 +85,13 @@ const form = reactive({
   description: ''
 })
 
+const toast = ref({ show: false, message: '', type: 'success' })
+
+function showToast(message: string, type: 'success' | 'error' = 'success') {
+  toast.value = { show: true, message, type }
+  setTimeout(() => { toast.value.show = false }, 2000)
+}
+
 onMounted(() => {
   botStore.fetchBots()
 })
@@ -102,7 +112,7 @@ function closeModal() {
 
 async function saveBot() {
   if (!form.name) {
-    alert('请输入 Bot 名称')
+    showToast('请输入 Bot 名称', 'error')
     return
   }
 
@@ -117,7 +127,7 @@ async function saveBot() {
     }
     closeModal()
   } catch (e: any) {
-    alert(e.message || '操作失败')
+    showToast(e.message || '操作失败', 'error')
   }
 }
 
@@ -139,7 +149,7 @@ async function regenerateToken() {
 
 function copyToken() {
   navigator.clipboard.writeText(currentToken.value)
-  alert('已复制到剪贴板')
+  showToast('已复制到剪贴板')
 }
 </script>
 
@@ -289,5 +299,31 @@ function copyToken() {
   flex: 1;
   font-size: 12px;
   word-break: break-all;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.toast.success {
+  background: var(--success, #34c759);
+}
+
+.toast.error {
+  background: var(--error, #ff3b30);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 </style>
