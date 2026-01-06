@@ -1,6 +1,5 @@
 <template>
   <div class="login-page">
-    <!-- 拖动区域 / 标题栏 -->
     <div class="drag-region" data-tauri-drag-region></div>
 
     <div class="login-container">
@@ -16,13 +15,21 @@
 
       <form class="login-form" @submit.prevent="handleLogin">
         <div class="form-item">
+          <label>服务器地址</label>
+          <input
+            v-model="serverUrl"
+            type="url"
+            placeholder="https://talkbox.qiujun.me"
+            required
+          />
+        </div>
+        <div class="form-item">
           <label>用户名</label>
           <input
             v-model="username"
             type="text"
             placeholder="请输入用户名"
             required
-            autofocus
           />
         </div>
         <div class="form-item">
@@ -59,23 +66,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getServerUrl, setServerUrl, getSavedCredentials, saveCredentials } from '@/api/config'
+import { updateBaseUrl } from '@/api/http'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+const serverUrl = ref('')
 const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+onMounted(() => {
+  serverUrl.value = getServerUrl()
+  const saved = getSavedCredentials()
+  username.value = saved.username
+  password.value = saved.password
+})
+
 async function handleLogin() {
-  if (!username.value || !password.value) return
+  if (!serverUrl.value || !username.value || !password.value) return
 
   loading.value = true
   error.value = ''
+
+  // 保存凭据和服务器地址
+  const url = serverUrl.value.replace(/\/+$/, '')
+  setServerUrl(url)
+  updateBaseUrl(url)
+  saveCredentials(username.value, password.value)
 
   try {
     await authStore.login(username.value, password.value)

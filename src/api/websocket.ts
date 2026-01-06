@@ -1,7 +1,9 @@
 import { ref } from 'vue'
+import { getServerUrl } from './config'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-const WS_URL = BASE_URL.replace(/^http/, 'ws') + '/ws'
+function getWsUrl(): string {
+  return getServerUrl().replace(/^http/, 'ws') + '/ws'
+}
 
 export class WebSocketService {
   private ws: WebSocket | null = null
@@ -26,8 +28,7 @@ export class WebSocketService {
   private doConnect() {
     if (this.ws?.readyState === WebSocket.OPEN) return
 
-    const wsUrl = `${WS_URL}?token=${this.token}`
-    console.log('WebSocket connecting to:', wsUrl)
+    const wsUrl = `${getWsUrl()}?token=${this.token}`
 
     try {
       this.ws = new WebSocket(wsUrl)
@@ -52,9 +53,8 @@ export class WebSocketService {
       this.connected.value = false
       this.stopPing()
 
-      // 1006 表示异常关闭（如握手失败）
       if (event.code === 1006 && this.reconnectAttempts === 0) {
-        const errorMsg = 'WebSocket connection failed. Check server logs for details (possible CORS/Origin issue).'
+        const errorMsg = 'WebSocket connection failed. Check server logs for details.'
         console.error(errorMsg)
         this.connectionError.value = errorMsg
         this.onConnectionError?.(errorMsg)
@@ -65,8 +65,6 @@ export class WebSocketService {
 
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error)
-      // 注意：浏览器的 WebSocket error 事件不包含详细信息
-      // 实际错误原因会在 onclose 中通过 code 判断
     }
 
     this.ws.onmessage = (event) => {
@@ -139,6 +137,7 @@ export class WebSocketService {
 
   disconnect() {
     this.stopPing()
+    this.reconnectAttempts = this.maxReconnectAttempts
     this.ws?.close()
     this.ws = null
   }

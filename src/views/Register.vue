@@ -1,6 +1,5 @@
 <template>
   <div class="register-page">
-    <!-- 拖动区域 / 标题栏 -->
     <div class="drag-region" data-tauri-drag-region></div>
 
     <div class="register-container">
@@ -16,13 +15,21 @@
 
       <form class="register-form" @submit.prevent="handleRegister">
         <div class="form-item">
+          <label>服务器地址</label>
+          <input
+            v-model="serverUrl"
+            type="url"
+            placeholder="https://talkbox.qiujun.me"
+            required
+          />
+        </div>
+        <div class="form-item">
           <label>用户名</label>
           <input
             v-model="username"
             type="text"
             placeholder="请输入用户名"
             required
-            autofocus
           />
         </div>
         <div class="form-item">
@@ -76,13 +83,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getServerUrl, setServerUrl, saveCredentials } from '@/api/config'
+import { updateBaseUrl } from '@/api/http'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+const serverUrl = ref('')
 const username = ref('')
 const nickname = ref('')
 const password = ref('')
@@ -90,8 +100,12 @@ const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref('')
 
+onMounted(() => {
+  serverUrl.value = getServerUrl()
+})
+
 async function handleRegister() {
-  if (!username.value || !password.value) return
+  if (!serverUrl.value || !username.value || !password.value) return
 
   if (password.value !== confirmPassword.value) {
     error.value = '两次输入的密码不一致'
@@ -105,6 +119,12 @@ async function handleRegister() {
 
   loading.value = true
   error.value = ''
+
+  // 保存服务器地址和凭据
+  const url = serverUrl.value.replace(/\/+$/, '')
+  setServerUrl(url)
+  updateBaseUrl(url)
+  saveCredentials(username.value, password.value)
 
   try {
     await authStore.register(username.value, password.value, nickname.value || undefined)

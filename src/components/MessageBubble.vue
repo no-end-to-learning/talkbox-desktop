@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import type { Message } from '@/api/types'
-import { BASE_URL } from '@/api/http'
+import { getBaseUrl } from '@/api/http'
 import { Icon } from '@iconify/vue'
 
 defineProps<{
@@ -108,7 +108,7 @@ function getAvatarColor(id?: string): string {
 
 function getFileUrl(url: string): string {
   if (url.startsWith('http')) return url
-  return BASE_URL + url
+  return getBaseUrl() + url
 }
 
 function formatText(text: string): string {

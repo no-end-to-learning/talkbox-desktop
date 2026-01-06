@@ -1,15 +1,25 @@
 import axios, { AxiosInstance } from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import { getServerUrl } from './config'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+let baseUrl = getServerUrl()
 
 const http: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: baseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   }
 })
+
+export function updateBaseUrl(url: string) {
+  baseUrl = url
+  http.defaults.baseURL = url
+}
+
+export function getBaseUrl(): string {
+  return baseUrl
+}
 
 http.interceptors.request.use(
   (config) => {
@@ -42,4 +52,3 @@ http.interceptors.response.use(
 )
 
 export default http
-export { BASE_URL }
